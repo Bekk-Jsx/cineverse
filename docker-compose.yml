@@ -1,0 +1,53 @@
+# All containers we want to run
+services:
+
+  # First container — CouchDB
+  couchdb:
+    image: couchdb:latest          # use this image from Docker Hub
+    container_name: cineverse_couchdb  # give it a friendly name
+    ports:
+      - "5984:5984"                # expose port (your machine:container)
+    environment:
+      COUCHDB_USER: admin          # env variables (like .env but for container)
+      COUCHDB_PASSWORD: admin
+    volumes:
+      - couchdb_data:/opt/couchdb/data  # persist data here
+    networks:
+      - cineverse_network          # connect to shared network
+
+  # Second container — Redis
+  redis:
+    image: redis:alpine            # alpine = lightweight Linux
+    container_name: cineverse_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cineverse_network
+
+  # Third container — Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: cineverse_elasticsearch
+    environment:
+      - discovery.type=single-node  # run as single node (not a cluster)
+      - xpack.security.enabled=false # disable security for local dev
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # limit RAM usage (512mb)
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - cineverse_network
+
+# Define volumes (Docker manages these on your machine)
+volumes:
+  couchdb_data:
+  redis_data:
+  elasticsearch_data:
+
+# Define the shared network
+networks:
+  cineverse_network:
+    driver: bridge    # standard network driver for local dev
