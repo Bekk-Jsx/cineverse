@@ -1,0 +1,6 @@
+{
+  "app": {
+    "name": "cineverse",
+    "port": 3000
+  }
+}
