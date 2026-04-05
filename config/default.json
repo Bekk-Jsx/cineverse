@@ -1,6 +1,22 @@
 {
   "app": {
     "name": "cineverse",
-    "port": 3000
+    "port": 3000,
+    "env": "development"
+  },
+  "couchdb": {
+    "host": "localhost",
+    "port": 5984,
+    "username": "admin",
+    "password": "admin",
+    "database": "cineverse"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  },
+  "elasticsearch": {
+    "host": "localhost",
+    "port": 9200
   }
 }
