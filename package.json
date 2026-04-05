@@ -13,6 +13,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "config": "^4.4.1",
+    "csv-parse": "^6.2.1",
     "lucide-react": "^1.7.0",
     "nano": "^11.0.5",
     "next": "16.2.2",
@@ -32,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
