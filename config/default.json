@@ -13,7 +13,12 @@
   },
   "redis": {
     "host": "localhost",
-    "port": 6379
+    "port": 6379,
+    "ttl": {
+      "session": 86400,
+      "cache": 300,
+      "rateLimit": 60
+    }
   },
   "elasticsearch": {
     "host": "localhost",

@@ -10,7 +10,9 @@ const PERSONS_INDEX = 'persons';
 // ─── Create Indexes ────────────────────────────────────────────────────────
 
 export const createMoviesIndex = async (): Promise<void> => {
+
   const exists = await esClient.indices.exists({ index: MOVIES_INDEX });
+  
   if (exists) {
     console.log('✅ Movies index already exists');
     return;
