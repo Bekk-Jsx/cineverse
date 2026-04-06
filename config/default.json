@@ -23,5 +23,9 @@
   "elasticsearch": {
     "host": "localhost",
     "port": 9200
+  },
+  "auth": {
+    "secret": "change-this-in-local-json",
+    "sessionMaxAge": 86400
   }
 }

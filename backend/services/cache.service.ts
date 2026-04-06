@@ -1,6 +1,10 @@
 import { redis } from '../config/redis.config';
 import config from 'config';
 
+// session:   86400  →  24 hours (user stays logged in)
+// cache:     300    →  5 minutes (movie data refreshes)
+// rateLimit: 60     →  1 minute window for rate limiting
+
 const ttlConfig = config.get<{
   session: number;
   cache: number;
