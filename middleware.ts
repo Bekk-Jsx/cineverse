@@ -1,5 +1,10 @@
-import { auth } from './auth';
+import NextAuth from 'next-auth';
+import { authOptions } from './backend/config/auth.config';
 import { NextResponse } from 'next/server';
+
+// Edge-safe NextAuth instance — uses only the edge-compatible config
+// (no Credentials provider, no CouchDB, no `config` package)
+const { auth } = NextAuth(authOptions);
 
 // Routes configuration
 const publicRoutes = ['/', '/login', '/register'];
