@@ -2,8 +2,9 @@
 
 import { useQuery } from '@apollo/client/react';
 import { useParams } from 'next/navigation';
-import { GET_MOVIE } from '@/frontend/services/graphql/queries/movies.queries';
+import { GET_MOVIE, GET_MOVIE_CREDITS } from '@/frontend/services/graphql/queries/movies.queries';
 import { Loader2, Star, Clock, Globe, DollarSign } from 'lucide-react';
+import Link from 'next/link';
 
 interface MovieDetail {
   id: string;
@@ -24,11 +25,34 @@ interface MovieDetail {
   production_companies: { id: number; name: string }[];
 }
 
+interface CastMember {
+  tmdb_id: number;
+  name: string;
+  character: string;
+  order: number;
+}
+
+interface CrewMember {
+  tmdb_id: number;
+  name: string;
+  department: string;
+  job: string;
+}
+
 const MovieDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
   const { data, loading, error } = useQuery<{ movie: MovieDetail }>(GET_MOVIE, {
     variables: { id },
+  });
+
+  const { data: creditsData } = useQuery<{
+    movieCredits: {
+      cast: CastMember[];
+      crew: CrewMember[];
+    };
+  }>(GET_MOVIE_CREDITS, {
+    variables: { movieId: id },
   });
 
   if (loading) {
@@ -48,10 +72,14 @@ const MovieDetailPage = () => {
   }
 
   const movie = data.movie;
+  const credits = creditsData?.movieCredits;
   const year = movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A';
-  const runtime = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`;
+  const runtime = `${Math.floor(movie.runtime / 60)}h ${Math.floor(movie.runtime % 60)}m`;
   const budget = movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : 'N/A';
   const revenue = movie.revenue ? `$${(movie.revenue / 1000000).toFixed(1)}M` : 'N/A';
+
+  // Get director from crew
+  const director = credits?.crew.find((c) => c.job === 'Director');
 
   return (
     <div className="space-y-8">
@@ -76,12 +104,10 @@ const MovieDetailPage = () => {
           </div>
         </div>
 
-        {/* Tagline */}
         {movie.tagline && (
           <p className="text-primary-500 italic text-lg">&quot;{movie.tagline}&quot;</p>
         )}
 
-        {/* Meta */}
         <div className="flex items-center gap-6 text-neutral-400 text-sm">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
@@ -95,9 +121,19 @@ const MovieDetailPage = () => {
           <span className="bg-neutral-800 px-2 py-1 rounded text-xs">
             {movie.status}
           </span>
+          {director && (
+            <span>
+              Directed by{' '}
+              <Link
+                href={`/actors/${director.tmdb_id}`}
+                className="text-primary-500 hover:underline"
+              >
+                {director.name}
+              </Link>
+            </span>
+          )}
         </div>
 
-        {/* Genres */}
         <div className="flex flex-wrap gap-2">
           {movie.genres.map((genre) => (
             <span
@@ -133,6 +169,56 @@ const MovieDetailPage = () => {
           </div>
         ))}
       </div>
+
+      {/* Cast */}
+      {credits?.cast && credits.cast.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Cast</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {credits.cast.slice(0, 12).map((member) => (
+              <Link
+                key={member.tmdb_id}
+                href={`/actors/${member.tmdb_id}`}
+                className="bg-neutral-900 rounded-lg p-3 hover:bg-neutral-800 transition-colors text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-neutral-700 flex items-center justify-center mx-auto mb-2">
+                  <span className="text-white text-lg font-bold">
+                    {member.name.charAt(0)}
+                  </span>
+                </div>
+                <p className="text-white text-sm font-medium line-clamp-1">
+                  {member.name}
+                </p>
+                <p className="text-neutral-400 text-xs line-clamp-1">
+                  {member.character}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Crew */}
+      {credits?.crew && credits.crew.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Key Crew</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {credits.crew
+              .filter((c) => ['Director', 'Producer', 'Screenplay', 'Original Music Composer'].includes(c.job))
+              .slice(0, 8)
+              .map((member) => (
+                <Link
+                  key={`${member.tmdb_id}-${member.job}`}
+                  href={`/actors/${member.tmdb_id}`}
+                  className="bg-neutral-900 rounded-lg p-3 hover:bg-neutral-800 transition-colors"
+                >
+                  <p className="text-white text-sm font-medium">{member.name}</p>
+                  <p className="text-neutral-400 text-xs">{member.job}</p>
+                </Link>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Production Companies */}
       {movie.production_companies.length > 0 && (

@@ -77,3 +77,37 @@ export const SEARCH_MOVIES = gql`
     }
   }
 `;
+
+export const GET_PERSON = gql`
+  query GetPerson($id: ID!) {
+    person(id: $id) {
+      id
+      tmdb_id
+      name
+      gender
+      known_for_department
+      movie_ids
+    }
+  }
+`;
+
+export const GET_MOVIE_CREDITS = gql`
+  query GetMovieCredits($movieId: ID!) {
+    movieCredits(movieId: $movieId) {
+      movie_id
+      cast {
+        tmdb_id
+        name
+        character
+        order
+        gender
+      }
+      crew {
+        tmdb_id
+        name
+        department
+        job
+      }
+    }
+  }
+`;
