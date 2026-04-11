@@ -3,20 +3,16 @@
 import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { redirect } from 'next/navigation';
 import { getProfile, updateProfile, getWatchlist, getFavorites } from '@/frontend/services/api/userApi';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, Film, Heart, Edit2, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
 const ProfilePage = () => {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState('');
-
-  // Redirect if not logged in
-  if (status === 'unauthenticated') redirect('/login');
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['profile'],
