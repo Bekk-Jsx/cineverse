@@ -51,7 +51,9 @@ const Navbar = () => {
 
           {session ? (
             <>
-              <span className="text-neutral-400 text-sm">{session.user.username}</span>
+              <Link href="/profile" className="text-neutral-300 hover:text-white text-sm">
+                {session.user.username}
+              </Link>
               {session.user.role === 'admin' && (
                 <Link href="/dashboard" className="text-warning text-sm">
                   Dashboard

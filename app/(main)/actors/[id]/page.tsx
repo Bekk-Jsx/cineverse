@@ -54,7 +54,7 @@ const PersonDetailPage = () => {
       {/* Header */}
       <div className="flex items-start gap-6">
         {/* Avatar */}
-        <div className="w-24 h-24 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0">
+        <div className="w-24 h-24 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
           <User className="w-12 h-12 text-neutral-400" />
         </div>
 
