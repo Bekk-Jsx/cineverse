@@ -25,6 +25,22 @@ const createIndexes = async (): Promise<void> => {
     name: 'type-index',
   });
 
+  // Index for reviews by movie
+  await db.createIndex({
+    index: {
+      fields: ['type', 'movie_id', 'created_at'],
+    },
+    name: 'type-movie-review-index',
+  });
+
+  // Index for user reviews
+  await db.createIndex({
+    index: {
+      fields: ['type', 'user_id', 'movie_id'],
+    },
+    name: 'type-user-movie-index',
+  });
+
   console.log('✅ CouchDB indexes created');
 };
 
