@@ -1,0 +1,8 @@
+cat > .dockerignore << 'EOF'
+node_modules
+.next
+.git
+data
+config/local.json
+*.log
+EOF

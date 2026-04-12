@@ -1,0 +1,11 @@
+{
+  "couchdb": {
+    "host": "couchdb"
+  },
+  "redis": {
+    "host": "redis"
+  },
+  "elasticsearch": {
+    "host": "elasticsearch"
+  }
+}

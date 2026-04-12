@@ -10,6 +10,7 @@ const redisConfig = config.get<{
 export const redis = new Redis({
   host: redisConfig.host,
   port: redisConfig.port,
+  lazyConnect: true,
   // Retry strategy — reconnect if connection drops
   retryStrategy: (times: number) => {
     if (times > 3) return null; // stop retrying after 3 attempts

@@ -7,6 +7,7 @@ import { SEARCH_MOVIES } from '@/frontend/services/graphql/queries/movies.querie
 import MovieCard from '@/frontend/components/movies/MovieCard';
 import { Button } from '@/components/ui/button';
 import { Loader2, SlidersHorizontal } from 'lucide-react';
+import { Suspense } from 'react';
 
 interface MovieResult {
   id: string;
@@ -158,4 +159,17 @@ const SearchPage = () => {
   );
 };
 
-export default SearchPage;
+// Wrap the main component
+const SearchPageWrapper = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+    }>
+      <SearchPage />
+    </Suspense>
+  );
+};
+
+export default SearchPageWrapper;

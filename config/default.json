@@ -5,14 +5,14 @@
     "env": "development"
   },
   "couchdb": {
-    "host": "localhost",
+    "host": "couchdb",
     "port": 5984,
     "username": "admin",
     "password": "admin",
     "database": "cineverse"
   },
   "redis": {
-    "host": "localhost",
+    "host": "redis",
     "port": 6379,
     "ttl": {
       "session": 86400,
@@ -21,7 +21,7 @@
     }
   },
   "elasticsearch": {
-    "host": "localhost",
+    "host": "elasticsearch",
     "port": 9200
   },
   "auth": {
