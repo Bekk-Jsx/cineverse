@@ -9,7 +9,7 @@ import { GET_MOVIE, GET_MOVIE_CREDITS } from '@/frontend/services/graphql/querie
 import { Loader2, Star, Clock, Globe, DollarSign, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
+import MovieActions from '@/frontend/components/movies/MovieActions';
 import { useSubscription } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 
@@ -395,6 +395,15 @@ const MovieDetailPage = () => {
 
       {/* Reviews */}
       <ReviewsSection movieId={id} />
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 bg-neutral-900 px-4 py-2 rounded-lg">
+          <Star className="w-5 h-5 text-warning fill-current" />
+          <span className="text-white font-bold text-xl">{movie.vote_average.toFixed(1)}</span>
+          <span className="text-neutral-400 text-sm">({movie.vote_count.toLocaleString()})</span>
+        </div>
+        <MovieActions movieId={id} />
+      </div>
 
     </div>
   );
