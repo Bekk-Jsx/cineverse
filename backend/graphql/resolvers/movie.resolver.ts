@@ -25,14 +25,12 @@ const mapMovie = (movie: MovieDocument) => ({
 
 export const movieResolvers = {
   Query: {
-    // query { movie(id: "19995") { title } }
     movie: async (_: unknown, { id }: { id: string }) => {
       const movie = await moviesService.getMovieById(id);
       if (!movie) return null;
       return mapMovie(movie);
     },
 
-    // query { movies(page: 1) { data { title } pagination { total } } }
     movies: async (_: unknown, { page = 1 }: { page: number }) => {
       const result = await moviesService.getMovies(page);
       return {
@@ -45,7 +43,7 @@ export const movieResolvers = {
       };
     },
 
-    // query { searchMovies(query: "avatar", genre: "Action") { title } }
+    // Updated — now returns SearchResult with pagination
     searchMovies: async (
       _: unknown,
       args: {
@@ -54,27 +52,35 @@ export const movieResolvers = {
         year?: number;
         minRating?: number;
         language?: string;
+        page?: number;
+        limit?: number;
       }
     ) => {
       const { query, ...filters } = args;
-      return moviesService.searchMovies(query, filters);
+      const result = await moviesService.searchMovies(query, filters) as {
+        data: object[];
+        total: number | { value: number };
+        page: number;
+      };
+      return {
+        data: Array.isArray(result) ? result : result.data,
+        total: Array.isArray(result) ? result.length : result.total,
+        page: filters.page ?? 1,
+      };
     },
   },
 
   Mutation: {
-    // mutation { createMovie(input: {...}) { id title } }
     createMovie: async (_: unknown, { input }: { input: Omit<MovieDocument, '_id' | '_rev' | 'created_at' | 'updated_at'> }) => {
       const movie = await moviesService.createMovie(input);
       return mapMovie(movie);
     },
 
-    // mutation { updateMovie(id: "19995", input: {...}) { title } }
     updateMovie: async (_: unknown, { id, input }: { id: string; input: Partial<MovieDocument> }) => {
       const movie = await moviesService.updateMovie(id, input);
       return mapMovie(movie);
     },
 
-    // mutation { deleteMovie(id: "19995") }
     deleteMovie: async (_: unknown, { id }: { id: string }) => {
       await moviesService.deleteMovie(id);
       return true;

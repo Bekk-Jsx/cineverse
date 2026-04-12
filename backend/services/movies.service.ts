@@ -1,26 +1,31 @@
 import * as movieRepo from '../repositories/movie.repository';
 import { esClient } from '../config/elasticsearch.config';
-import { getCache, setCache, deleteCache, CACHE_KEYS } from './cache.service';
+import { getCache, setCache, deleteCache, deleteCachePattern, CACHE_KEYS } from './cache.service';
 import type { MovieDocument } from '../../frontend/types';
 
-// Get paginated movies — with Redis cache
+// ─── Types ────────────────────────────────────────────────────────────────
+
+interface SearchResult {
+  data: object[];
+  total: number;
+  page: number;
+}
+
+// ─── Get Movies ───────────────────────────────────────────────────────────
+
 export const getMovies = async (page: number = 1) => {
   const cacheKey = CACHE_KEYS.movies(page);
 
-  // Check cache first
   const cached = await getCache<{ movies: MovieDocument[]; total: number }>(cacheKey);
   if (cached) return cached;
 
-  // Cache miss → fetch from CouchDB
   const result = await movieRepo.getMovies(page);
-
-  // Store in cache
   await setCache(cacheKey, result);
-
   return result;
 };
 
-// Get single movie — with Redis cache
+// ─── Get Single Movie ─────────────────────────────────────────────────────
+
 export const getMovieById = async (id: string): Promise<MovieDocument | null> => {
   const cacheKey = CACHE_KEYS.movie(id);
 
@@ -34,7 +39,8 @@ export const getMovieById = async (id: string): Promise<MovieDocument | null> =>
   return movie;
 };
 
-// Search movies via Elasticsearch
+// ─── Search Movies ────────────────────────────────────────────────────────
+
 export const searchMovies = async (
   query: string,
   filters: {
@@ -42,84 +48,97 @@ export const searchMovies = async (
     year?: number;
     minRating?: number;
     language?: string;
+    page?: number;
+    limit?: number;
   } = {}
-) => {
+): Promise<SearchResult> => {
+  const { page = 1, limit = 20, ...restFilters } = filters;
   const cacheKey = CACHE_KEYS.search(`${query}_${JSON.stringify(filters)}`);
 
-  const cached = await getCache(cacheKey);
+  const cached = await getCache<SearchResult>(cacheKey);
   if (cached) return cached;
 
-  // Build ES query
   const must: object[] = [];
   const filter: object[] = [];
 
-  // Full text search on title + overview
   if (query) {
     must.push({
       multi_match: {
         query,
-        fields: ['title^3', 'overview', 'tagline'], // title weighted 3x
-        fuzziness: 'AUTO',                           // handles typos
+        fields: ['title^3', 'overview', 'tagline'],
+        fuzziness: 'AUTO',
       },
     });
   }
 
-  // Filters
-  if (filters.genre) {
+  if (restFilters.genre) {
     filter.push({
       nested: {
         path: 'genres',
-        query: { term: { 'genres.name': filters.genre } },
+        query: { term: { 'genres.name': restFilters.genre } },
       },
     });
   }
 
-  if (filters.year) {
+  if (restFilters.year) {
     filter.push({
       range: {
         release_date: {
-          gte: `${filters.year}-01-01`,
-          lte: `${filters.year}-12-31`,
+          gte: `${restFilters.year}-01-01`,
+          lte: `${restFilters.year}-12-31`,
         },
       },
     });
   }
 
-  if (filters.minRating) {
+  if (restFilters.minRating) {
     filter.push({
-      range: { vote_average: { gte: filters.minRating } },
+      range: { vote_average: { gte: restFilters.minRating } },
     });
   }
 
-  if (filters.language) {
-    filter.push({ term: { original_language: filters.language } });
+  if (restFilters.language) {
+    filter.push({ term: { original_language: restFilters.language } });
   }
 
   const response = await esClient.search({
     index: 'movies',
+    from: (page - 1) * limit,  // pagination offset
+    size: limit,
     query: {
       bool: { must, filter },
     },
-    size: 20,
+    // Only return fields we need
+    _source: ['title', 'overview', 'vote_average', 'release_date', 'genres'],
   });
 
-  const results = response.hits.hits.map((hit) => ({
-    id: hit._id,
-    score: hit._score,
-    ...(hit._source ?? {}),
-  }));
+  // ES returns total as object { value: number, relation: string }
+  const totalHits = response.hits.total;
+  const totalCount = typeof totalHits === 'object' && totalHits !== null
+    ? totalHits.value
+    : totalHits ?? 0;
 
-  await setCache(cacheKey, results);
+  const results: SearchResult = {
+    data: response.hits.hits.map((hit) => ({
+      id: hit._id,
+      score: hit._score,
+      ...(hit._source ?? {}),
+    })),
+    total: totalCount,
+    page,
+  };
+
+  await setCache(cacheKey, results, 60); // shorter TTL for search
   return results;
 };
 
-// Create movie — invalidate cache + index in ES
+// ─── Create Movie ─────────────────────────────────────────────────────────
+
 export const createMovie = async (
   data: Omit<MovieDocument, '_id' | '_rev' | 'created_at' | 'updated_at'>
 ): Promise<MovieDocument> => {
   const movie = await movieRepo.createMovie(data);
 
-  // Index in Elasticsearch
   await esClient.index({
     index: 'movies',
     id: movie._id,
@@ -133,42 +152,39 @@ export const createMovie = async (
     },
   });
 
-  // Invalidate movies list cache
-  await deleteCache(CACHE_KEYS.movies(1));
-
+  await deleteCachePattern('movies:page:*'); // invalidate ALL pages
   return movie;
 };
 
-// Update movie — invalidate cache + update ES
+// ─── Update Movie ─────────────────────────────────────────────────────────
+
 export const updateMovie = async (
   id: string,
   updates: Partial<MovieDocument>
 ): Promise<MovieDocument> => {
   const movie = await movieRepo.updateMovie(id, updates);
 
-  // Update in ES
   await esClient.update({
     index: 'movies',
     id: `movie_${id}`,
     doc: updates,
   });
 
-  // Invalidate this movie's cache
   await deleteCache(CACHE_KEYS.movie(id));
-
+  await deleteCachePattern('movies:page:*');
   return movie;
 };
 
-// Delete movie — invalidate cache + remove from ES
+// ─── Delete Movie ─────────────────────────────────────────────────────────
+
 export const deleteMovie = async (id: string): Promise<void> => {
   await movieRepo.deleteMovie(id);
 
-  // Remove from ES
   await esClient.delete({
     index: 'movies',
     id: `movie_${id}`,
   });
 
-  // Invalidate cache
   await deleteCache(CACHE_KEYS.movie(id));
+  await deleteCachePattern('movies:page:*');
 };

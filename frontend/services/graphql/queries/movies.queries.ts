@@ -58,6 +58,7 @@ export const SEARCH_MOVIES = gql`
     $year: Int
     $minRating: Float
     $language: String
+    $page: Int
   ) {
     searchMovies(
       query: $query
@@ -65,15 +66,20 @@ export const SEARCH_MOVIES = gql`
       year: $year
       minRating: $minRating
       language: $language
+      page: $page
     ) {
-      id
-      title
-      overview
-      vote_average
-      release_date
-      genres {
-        name
+      data {
+        id
+        title
+        overview
+        vote_average
+        release_date
+        genres {
+          name
+        }
       }
+      total
+      page
     }
   }
 `;

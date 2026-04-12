@@ -43,10 +43,24 @@ export const movieTypeDefs = gql`
     totalPages: Int!
   }
 
+  type SearchResult {
+    data: [Movie!]!
+    total: Int!
+    page: Int!
+  }
+
   type Query {
     movie(id: ID!): Movie
     movies(page: Int): MoviesResult!
-    searchMovies(query: String!, genre: String, year: Int, minRating: Float, language: String): [Movie!]!
+    searchMovies(
+      query: String!
+      genre: String
+      year: Int
+      minRating: Float
+      language: String
+      page: Int
+      limit: Int
+    ): SearchResult!
   }
 
   type Mutation {
