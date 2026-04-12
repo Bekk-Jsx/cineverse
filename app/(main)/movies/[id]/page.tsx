@@ -10,6 +10,20 @@ import { Loader2, Star, Clock, Globe, DollarSign, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+import { useSubscription } from '@apollo/client/react';
+import { gql } from '@apollo/client';
+
+const NEW_REVIEW_SUBSCRIPTION = gql`
+  subscription OnNewReview($movieId: String!) {
+    newReview(movieId: $movieId) {
+      username
+      rating
+      content
+      created_at
+    }
+  }
+`;
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 interface MovieDetail {
@@ -54,6 +68,15 @@ interface Review {
   user_id: string;
 }
 
+interface NewReviewSubscription {
+  newReview: {
+    username: string;
+    rating: number;
+    content: string;
+    created_at: string;
+  };
+}
+
 // ─── Reviews Section ──────────────────────────────────────────────────────
 
 const ReviewsSection = ({ movieId }: { movieId: string }) => {
@@ -62,6 +85,16 @@ const ReviewsSection = ({ movieId }: { movieId: string }) => {
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+  // Inside ReviewsSection:
+  useSubscription<NewReviewSubscription>(NEW_REVIEW_SUBSCRIPTION, {
+    variables: { movieId },
+    onData: ({ data }) => {
+      if (data.data?.newReview) {
+        queryClient.invalidateQueries({ queryKey: ['reviews', movieId] });
+      }
+    },
+  });
 
   const { data: reviewsData } = useQuery({
     queryKey: ['reviews', movieId],

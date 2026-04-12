@@ -1,6 +1,7 @@
 import * as reviewRepo from '../repositories/review.repository';
 import { getCache, setCache, deleteCache } from './cache.service';
 import type { ReviewDocument } from '../../frontend/types';
+import { publish, CHANNELS } from './pubsub.service';
 
 const REVIEW_CACHE_KEY = (movieId: string) => `reviews:${movieId}`;
 
@@ -34,6 +35,15 @@ export const createReview = async (
         rating: data.rating,
         content: data.content,
         likes: 0,
+    });
+
+    // Publish to Redis → triggers GraphQL subscription
+    await publish(CHANNELS.NEW_REVIEW, {
+        movie_id: `movie_${movieId}`,
+        username,
+        rating: data.rating,
+        content: data.content,
+        created_at: review.created_at,
     });
 
     // Invalidate cache
